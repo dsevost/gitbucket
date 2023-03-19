@@ -22,6 +22,7 @@ class ApiController
     with ApiRepositoryCommitControllerBase
     with ApiRepositoryContentsControllerBase
     with ApiRepositoryControllerBase
+    with ApiRepositoryMigrationControllerBase
     with ApiRepositoryStatusControllerBase
     with ApiRepositoryWebhookControllerBase
     with ApiUserControllerBase
@@ -36,6 +37,7 @@ class ApiController
     with CommitStatusService
     with ReleaseService
     with RepositoryCreationService
+    with RepositoryMigrationService
     with RepositoryCommitFileService
     with IssueCreationService
     with HandleCommentService

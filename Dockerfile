@@ -33,6 +33,11 @@ RUN \
 
 FROM registry.access.redhat.com/ubi8/openjdk-17-runtime:latest AS RUNTIME
 
+USER 0
+
+RUN \
+    microdnf install -y fontconfig
+
 COPY --from=BUILDER /home/1000/gitbucket/target/executable/*.jar /deployments/
 
 ENV \

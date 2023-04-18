@@ -22,7 +22,7 @@ case class MigrateARepository(
   }
 }
 
-    // [https|git://]               [username@]        github.com / gitbucket            / gitbucket
+// [https|git://]               [username@]        github.com / gitbucket            / gitbucket
 //    mirror_of.matches(
 //      "^\\(\\(https\\|git\\)://\\)\\?\\([a-z0-9]\\+@\\)\\?\\([^/]\\+\\)/\\([a-zA-Z0-9_-]\\)\\+/\\([a-zA-Z0-9_-]\\)\\+"
 //    )

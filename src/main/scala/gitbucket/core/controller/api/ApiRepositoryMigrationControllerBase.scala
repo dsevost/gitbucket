@@ -9,7 +9,7 @@ import gitbucket.core.util.Implicits._
 import gitbucket.core.model.Profile.profile.blockingApi._
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Constants
-import org.scalatra.Forbidden
+//import org.scalatra.Forbidden
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -54,19 +54,22 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
             data.mirror_of
           )
           Await.result(f, Duration.Inf)
-          updateMirroredRepositoryOptions(owner,data.name)
+          updateMirroredRepositoryOptions(owner, data.name)
 
-          val r = getRepository(owner,data.name)
+          val r = getRepository(owner, data.name)
           logger.warn(s"::post(reponame: migrate) - $r")
 
           flash.update("info", "Repository settings has been updated.")
 
-          Using.resource(Git.open(getRepositoryDir(owner, data.name))) { git =>
-            val branchList = git.branchList.call.asScala.map { ref => ref.getName.stripPrefix("refs/heads/") }.toList
-            logger.warn(s"BRANCHLIST: $branchList")
-            if (!branchList.contains("master")) {
-              git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
-            }
+          Using.resource(Git.open(getRepositoryDir(owner, data.name))) {
+            git =>
+              val branchList = git.branchList.call.asScala.map { ref =>
+                ref.getName.stripPrefix("refs/heads/")
+              }.toList
+              logger.warn(s"BRANCHLIST: $branchList")
+              if (!branchList.contains("master")) {
+                git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
+              }
 //            git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
 //            saveRepositoryDefaultBranch(owner, data.name, "main")
           }
@@ -81,8 +84,7 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
     }) getOrElse NotFound()
   })
 
-
-/*
+  /*
   post("/api/v3/orgs/:org/migrate")(usersOnly {
     val groupName = params("org")
     (for {
@@ -115,7 +117,7 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
       }
     }) getOrElse NotFound()
   })
-  */
+   */
 
   delete("/api/v3/repos/:owner/:repository")(usersOnly {
     val userName = params("owner")
@@ -132,7 +134,7 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
     }
   })
 
-  def responseCode(code: Int=404, message: String="Not Found"): Unit = {
+  def responseCode(code: Int = 404, message: String = "Not Found"): Unit = {
     halt(code, s"""{ "message": $message }""")
   }
 }

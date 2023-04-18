@@ -5,16 +5,18 @@ import java.util.concurrent.ConcurrentHashMap
 
 import gitbucket.core.model.Profile.profile.blockingApi._
 import gitbucket.core.util.Directory._
-import gitbucket.core.util.{FileUtil, JGitUtil, LockUtil}
-import gitbucket.core.model.{Account, Repository, Role}
+//import gitbucket.core.util.{FileUtil, JGitUtil, LockUtil}
+import gitbucket.core.util.{JGitUtil}
+//import gitbucket.core.model.{Account, Repository, Role}
+import gitbucket.core.model.{Account, Repository}
 import gitbucket.core.plugin.PluginRegistry
 import gitbucket.core.model.Profile._
-import gitbucket.core.service.RepositoryService.RepositoryInfo
+//import gitbucket.core.service.RepositoryService.RepositoryInfo
 import gitbucket.core.servlet.Database
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.dircache.DirCache
-import org.eclipse.jgit.lib.{Constants, FileMode}
+//import org.eclipse.jgit.dircache.DirCache
+//import org.eclipse.jgit.lib.{Constants, FileMode}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,10 +28,10 @@ object RepositoryMigrationService {
 
   private val Creating = new ConcurrentHashMap[String, Option[String]]()
 
-/*  def isCreating(owner: String, repository: String): Boolean = {
+  /*  def isCreating(owner: String, repository: String): Boolean = {
     Option(Creating.get(s"${owner}/${repository}")).exists(_.isEmpty)
   }
-*/
+   */
   def startMigration(owner: String, repository: String): Unit = {
     Creating.put(s"${owner}/${repository}", None)
   }
@@ -41,27 +43,24 @@ object RepositoryMigrationService {
     }
   }
 
-/*  def getCreationError(owner: String, repository: String): Option[String] = {
+  /*  def getCreationError(owner: String, repository: String): Option[String] = {
     Option(Creating.remove(s"${owner}/${repository}")).flatten
   }
-*/
+ */
 }
 
 trait RepositoryMigrationService {
-  self: AccountService
-    with RepositoryService
-    with LabelsService
-    with PrioritiesService =>
+  self: AccountService with RepositoryService with LabelsService with PrioritiesService =>
 
-  import RepositoryService._
+//  import RepositoryService._
 
   private val logger = LoggerFactory.getLogger(classOf[RepositoryMigrationService])
 
-/*  def canCreateRepository(repositoryOwner: String, loginAccount: Account)(implicit session: Session): Boolean = {
+  /*  def canCreateRepository(repositoryOwner: String, loginAccount: Account)(implicit session: Session): Boolean = {
     repositoryOwner == loginAccount.userName || getGroupsByUserName(loginAccount.userName)
       .contains(repositoryOwner) || loginAccount.isAdmin
   }
-*/
+   */
 
   def migrateRepository(
     loginAccount: Account,
@@ -79,13 +78,13 @@ trait RepositoryMigrationService {
 
         logger.warn(s"::migrateRepository($sourceUrl) - create copy repository dir");
         val copyRepositoryDir = {
-/*          val branches = Git.lsRemoteRepository().setHeads(true).setTags(true).setRemote(sourceUrl).callAsMap
+          /*          val branches = Git.lsRemoteRepository().setHeads(true).setTags(true).setRemote(sourceUrl).callAsMap
 
           branches.forEach {
             case (k, v) =>
               logger.warn(s"Key: $k, Ref: $v}");
           }
-*/
+           */
           val dir = Files.createTempDirectory(s"gitbucket-${owner}-${name}").toFile
           // Git.cloneRepository().setBare(true).setURI(url).setDirectory(dir).setCloneAllBranches(true).call()
           val cloneGit = Git.cloneRepository().setMirror(true).setURI(sourceUrl).setDirectory(dir).call()
@@ -93,7 +92,6 @@ trait RepositoryMigrationService {
 
           Some(dir)
         }
-
 
         logger.warn(s"::migrateRepository($copyRepositoryDir)");
 
@@ -113,7 +111,9 @@ trait RepositoryMigrationService {
             Using.resource(Git.open(dir)) { git =>
               git.push().setRemote(gitdir.toURI.toString).setPushAll().setPushTags().call()
 
-              val branchList = git.branchList.call.asScala.map { ref => ref.getName.stripPrefix("refs/heads/") }.toList
+              val branchList = git.branchList.call.asScala.map { ref =>
+                ref.getName.stripPrefix("refs/heads/")
+              }.toList
               logger.warn(s"BRANCHLIST: $branchList")
               if (!branchList.contains("master")) {
                 saveRepositoryDefaultBranch(owner, name, branchList.head)
@@ -137,10 +137,10 @@ trait RepositoryMigrationService {
 
   def getOnlyRepository(userName: String, repositoryName: String)(implicit s: Session): Option[Repository] = {
     logger.debug(s"::getOnlyRepository($userName,$repositoryName)")
-    (Repositories
-      .filter { r => r.byRepository(userName, repositoryName)
+    (Repositories.filter { r =>
+      r.byRepository(userName, repositoryName)
     } firstOption) map {
-      case(repository) =>
+      case (repository) =>
         logger.debug(s"::getOnlyRepository($userName,$repositoryName) = $repository")
         repository
     }

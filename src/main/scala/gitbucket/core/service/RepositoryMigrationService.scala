@@ -76,7 +76,7 @@ trait RepositoryMigrationService {
         //val ownerAccount = getAccountByUserName(owner).get
         val loginUserName = loginAccount.userName
 
-        logger.warn(s"::migrateRepository($sourceUrl) - create copy repository dir");
+        logger.info(s"::migrateRepository($sourceUrl) - start cloning");
         val copyRepositoryDir = {
           /*          val branches = Git.lsRemoteRepository().setHeads(true).setTags(true).setRemote(sourceUrl).callAsMap
 
@@ -85,15 +85,15 @@ trait RepositoryMigrationService {
               logger.warn(s"Key: $k, Ref: $v}");
           }
            */
+//          logger.info(s"Clone dir: ${dir}")
           val dir = Files.createTempDirectory(s"gitbucket-${owner}-${name}").toFile
           // Git.cloneRepository().setBare(true).setURI(url).setDirectory(dir).setCloneAllBranches(true).call()
           val cloneGit = Git.cloneRepository().setMirror(true).setURI(sourceUrl).setDirectory(dir).call()
-          logger.warn(s"Remote git repository clone dir: ${dir}")
 
           Some(dir)
         }
 
-        logger.warn(s"::migrateRepository($copyRepositoryDir)");
+//        logger.info(s"::migrateRepository($copyRepositoryDir)");
 
         // Insert to the database at first
         insertRepository(name, owner, None, isPrivate)
@@ -106,7 +106,7 @@ trait RepositoryMigrationService {
         JGitUtil.initRepository(gitdir)
 
         copyRepositoryDir.foreach { dir =>
-          logger.warn(s"Handling git: ${dir}")
+          logger.info(s"::migrateRepository($sourceUrl) - handling local copy ${dir}")
           try {
             Using.resource(Git.open(dir)) { git =>
               git.push().setRemote(gitdir.toURI.toString).setPushAll().setPushTags().call()
@@ -114,7 +114,7 @@ trait RepositoryMigrationService {
               val branchList = git.branchList.call.asScala.map { ref =>
                 ref.getName.stripPrefix("refs/heads/")
               }.toList
-              logger.warn(s"BRANCHLIST: $branchList")
+//              logger.warn(s"BRANCHLIST: $branchList")
               if (!branchList.contains("master")) {
                 saveRepositoryDefaultBranch(owner, name, branchList.head)
               }
@@ -128,6 +128,7 @@ trait RepositoryMigrationService {
         PluginRegistry().getRepositoryHooks.foreach(_.created(owner, name))
       }
 
+      logger.info(s"Repository migrated: ${sourceUrl}")
       RepositoryMigrationService.endMigration(owner, name, None)
 
     } catch {

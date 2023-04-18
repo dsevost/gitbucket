@@ -97,6 +97,7 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
       data <- extractFromJsonBody[MigrateARepository] if data.isValid
     } yield {
       LockUtil.lock(s"${groupName}/${data.name}") {
+        // TODO: handle unexistence ORG
         if (getRepository(groupName, data.name).isDefined) {
           ApiError(
             "A repository with this name already exists for this group",
@@ -127,15 +128,12 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
               }.toList
               // logger.warn(s"BRANCHLIST: $branchList")
               if (!branchList.contains("master")) {
-//              git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
-                logger.info(s"'master' branch not found for repo '$data.name', looking for 'main'")
+//                logger.info(s"'master' branch not found for repo '$data.name', looking for 'main'")
                 if (branchList.contains("main")) {
-                  logger.info(s"'main' branch found for repo '$data.name', setting default branch to 'main'")
+//                  logger.info(s"'main' branch found for repo '$data.name', setting default branch to 'main'")
                   git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
                 } else {
-                  logger.info(
-                    s"'main' branch not found for repo '$data.name', setting default branch to '$branchList.head'"
-                  )
+//                  logger.info(s"'main' branch not found for repo '$data.name', setting default branch to '$branchList.head'")
                   git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + branchList.head)
                 }
               }

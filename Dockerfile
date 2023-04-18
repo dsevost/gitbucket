@@ -27,9 +27,7 @@ COPY --chown=1000 . .
 RUN \
     pwd && \
     sbt executable && \
-    for a in /home/1000/gitbucket/target/executable/*.war ; do \
-	mv $a $(echo $a | sed 's/\.war/.jar/') ; \
-    done
+    rename -v -- '.war' '-fat.jar' $HOME/gitbucket/target/executable/*.war
 
 FROM registry.access.redhat.com/ubi8/openjdk-17-runtime:latest AS RUNTIME
 

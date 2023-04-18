@@ -9,7 +9,7 @@ import gitbucket.core.util.Implicits._
 import gitbucket.core.model.Profile.profile.blockingApi._
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Constants
-//import org.scalatra.Forbidden
+import org.scalatra.Forbidden
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Await
@@ -33,12 +33,12 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
   private val logger = LoggerFactory.getLogger(classOf[ApiRepositoryMigrationControllerBase])
 
   post("/api/v3/user/migrate")(usersOnly {
-    logger.warn(s"::post(migrate)")
+    // logger.warn(s"::post(migrate)")
     val owner = context.loginAccount.get.userName
     (for {
       data <- extractFromJsonBody[MigrateARepository] if data.isValid
     } yield {
-      logger.warn(s"::post(data: migrate) - $data")
+      // logger.warn(s"::post(data: migrate) - $data")
       LockUtil.lock(s"${owner}/${data.name}") {
         if (getRepository(owner, data.name).isDefined) {
           ApiError(
@@ -57,7 +57,7 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
           updateMirroredRepositoryOptions(owner, data.name)
 
           val r = getRepository(owner, data.name)
-          logger.warn(s"::post(reponame: migrate) - $r")
+          // logger.warn(s"::post(reponame: migrate) - $r")
 
           flash.update("info", "Repository settings has been updated.")
 
@@ -66,12 +66,19 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
               val branchList = git.branchList.call.asScala.map { ref =>
                 ref.getName.stripPrefix("refs/heads/")
               }.toList
-              logger.warn(s"BRANCHLIST: $branchList")
+              // logger.warn(s"BRANCHLIST: $branchList")
               if (!branchList.contains("master")) {
-                git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
+                logger.info(s"'master' branch not found for repo '$data.name', looking for 'main'")
+                if (branchList.contains("main")) {
+                  logger.info(s"'main' branch found for repo '$data.name', setting default branch to 'main'")
+                  git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
+                } else {
+                  logger.info(
+                    s"'main' branch not found for repo '$data.name', setting default branch to '$branchList.head'"
+                  )
+                  git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + branchList.head)
+                }
               }
-//            git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
-//            saveRepositoryDefaultBranch(owner, data.name, "main")
           }
           flash.update("info", "Repository default branch has been updated.")
 
@@ -84,7 +91,6 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
     }) getOrElse NotFound()
   })
 
-  /*
   post("/api/v3/orgs/:org/migrate")(usersOnly {
     val groupName = params("org")
     (for {
@@ -99,16 +105,43 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
         } else if (!canCreateRepository(groupName, context.loginAccount.get)) {
           Forbidden()
         } else {
-          val f = createRepository(
+          val f = migrateRepository(
             context.loginAccount.get,
             groupName,
             data.name,
-            data.description,
             data.`private`,
-            "COPY",
-            Option(data.mirror_of)
+            data.mirror_of
           )
           Await.result(f, Duration.Inf)
+          updateMirroredRepositoryOptions(groupName, data.name)
+
+          val r = getRepository(groupName, data.name)
+          // logger.warn(s"::post(reponame: migrate) - $r")
+
+          flash.update("info", "Repository settings has been updated.")
+
+          Using.resource(Git.open(getRepositoryDir(groupName, data.name))) {
+            git =>
+              val branchList = git.branchList.call.asScala.map { ref =>
+                ref.getName.stripPrefix("refs/heads/")
+              }.toList
+              // logger.warn(s"BRANCHLIST: $branchList")
+              if (!branchList.contains("master")) {
+//              git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
+                logger.info(s"'master' branch not found for repo '$data.name', looking for 'main'")
+                if (branchList.contains("main")) {
+                  logger.info(s"'main' branch found for repo '$data.name', setting default branch to 'main'")
+                  git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + "main")
+                } else {
+                  logger.info(
+                    s"'main' branch not found for repo '$data.name', setting default branch to '$branchList.head'"
+                  )
+                  git.getRepository.updateRef(Constants.HEAD, true).link(Constants.R_HEADS + branchList.head)
+                }
+              }
+          }
+          flash.update("info", "Repository default branch has been updated.")
+
           val repository = Database() withTransaction { session =>
             getRepository(groupName, data.name).get
           }
@@ -117,7 +150,6 @@ trait ApiRepositoryMigrationControllerBase extends ControllerBase {
       }
     }) getOrElse NotFound()
   })
-   */
 
   delete("/api/v3/repos/:owner/:repository")(usersOnly {
     val userName = params("owner")

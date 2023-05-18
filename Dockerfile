@@ -8,7 +8,6 @@ RUN \
     dnf install -y \
 	--disablerepo \* \
 	--enablerepo fedora,updates,sbt-rpm \
-	git \
 	java-17-openjdk-devel \
 	java-17-openjdk-headless \
 	sbt \
@@ -34,7 +33,9 @@ FROM registry.access.redhat.com/ubi8/openjdk-17-runtime:latest AS RUNTIME
 USER 0
 
 RUN \
-    microdnf install -y fontconfig
+    microdnf install -y \
+	fontconfig \
+	git
 
 COPY --from=BUILDER /home/1000/gitbucket/target/executable/*.jar /deployments/
 

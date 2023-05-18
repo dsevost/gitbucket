@@ -8,6 +8,7 @@ RUN \
     dnf install -y \
 	--disablerepo \* \
 	--enablerepo fedora,updates,sbt-rpm \
+	git \
 	java-17-openjdk-devel \
 	java-17-openjdk-headless \
 	sbt \

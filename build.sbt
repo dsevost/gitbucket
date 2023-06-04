@@ -3,9 +3,9 @@ import com.jsuereth.sbtpgp.PgpKeys._
 
 val Organization = "io.github.gitbucket"
 val Name = "gitbucket"
-val GitBucketVersion = "4.38.4"
+val GitBucketVersion = "4.39.0"
 val ScalatraVersion = "2.8.4"
-val JettyVersion = "9.4.49.v20220914"
+val JettyVersion = "9.4.51.v20230217"
 val JgitVersion = "5.13.1.202206130422-r"
 
 lazy val root = (project in file("."))
@@ -15,9 +15,9 @@ sourcesInBase := false
 organization := Organization
 name := Name
 version := GitBucketVersion
-scalaVersion := "2.13.9"
+scalaVersion := "2.13.10"
 
-scalafmtOnCompile := true
+// scalafmtOnCompile := true
 
 coverageExcludedPackages := ".*\\.html\\..*"
 
@@ -33,42 +33,42 @@ libraryDependencies ++= Seq(
   "org.scalatra"                    %% "scalatra"                    % ScalatraVersion cross CrossVersion.for3Use2_13,
   "org.scalatra"                    %% "scalatra-json"               % ScalatraVersion cross CrossVersion.for3Use2_13,
   "org.scalatra"                    %% "scalatra-forms"              % ScalatraVersion cross CrossVersion.for3Use2_13,
-  "org.json4s"                      %% "json4s-jackson"              % "4.0.5" cross CrossVersion.for3Use2_13,
+  "org.json4s"                      %% "json4s-jackson"              % "4.0.6" cross CrossVersion.for3Use2_13,
   "commons-io"                      % "commons-io"                   % "2.11.0",
   "io.github.gitbucket"             % "solidbase"                    % "1.0.5",
   "io.github.gitbucket"             % "markedj"                      % "1.0.17",
-  "org.apache.commons"              % "commons-compress"             % "1.21",
+  "org.apache.commons"              % "commons-compress"             % "1.23.0",
   "org.apache.commons"              % "commons-email"                % "1.5",
-  "commons-net"                     % "commons-net"                  % "3.8.0",
-  "org.apache.httpcomponents"       % "httpclient"                   % "4.5.13",
-  "org.apache.sshd"                 % "apache-sshd"                  % "2.9.1" exclude ("org.slf4j", "slf4j-jdk14") exclude ("org.apache.sshd", "sshd-mina") exclude ("org.apache.sshd", "sshd-netty"),
-  "org.apache.tika"                 % "tika-core"                    % "2.4.1",
+  "commons-net"                     % "commons-net"                  % "3.9.0",
+  "org.apache.httpcomponents"       % "httpclient"                   % "4.5.14",
+  "org.apache.sshd"                 % "apache-sshd"                  % "2.9.2" exclude ("org.slf4j", "slf4j-jdk14") exclude ("org.apache.sshd", "sshd-mina") exclude ("org.apache.sshd", "sshd-netty"),
+  "org.apache.tika"                 % "tika-core"                    % "2.7.0",
   "com.github.takezoe"              %% "blocking-slick-32"           % "0.0.12" cross CrossVersion.for3Use2_13,
   "com.novell.ldap"                 % "jldap"                        % "2009-10-07",
   "com.h2database"                  % "h2"                           % "1.4.199",
-  "org.mariadb.jdbc"                % "mariadb-java-client"          % "2.7.4",
-  "org.postgresql"                  % "postgresql"                   % "42.5.0",
-  "ch.qos.logback"                  % "logback-classic"              % "1.2.11",
+  "org.mariadb.jdbc"                % "mariadb-java-client"          % "2.7.6",
+  "org.postgresql"                  % "postgresql"                   % "42.6.0",
+  "ch.qos.logback"                  % "logback-classic"              % "1.3.7",
   "com.zaxxer"                      % "HikariCP"                     % "4.0.3" exclude ("org.slf4j", "slf4j-api"),
   "com.typesafe"                    % "config"                       % "1.4.2",
   "fr.brouillard.oss.security.xhub" % "xhub4j-core"                  % "1.1.0",
   "io.github.java-diff-utils"       % "java-diff-utils"              % "4.12",
   "org.cache2k"                     % "cache2k-all"                  % "1.6.0.Final",
-  "net.coobird"                     % "thumbnailator"                % "0.4.17",
+  "net.coobird"                     % "thumbnailator"                % "0.4.19",
   "com.github.zafarkhaja"           % "java-semver"                  % "0.9.0",
-  "com.nimbusds"                    % "oauth2-oidc-sdk"              % "9.43.1",
+  "com.nimbusds"                    % "oauth2-oidc-sdk"              % "10.8",
   "org.eclipse.jetty"               % "jetty-webapp"                 % JettyVersion % "provided",
   "javax.servlet"                   % "javax.servlet-api"            % "3.1.0" % "provided",
   "junit"                           % "junit"                        % "4.13.2" % "test",
   "org.scalatra"                    %% "scalatra-scalatest"          % ScalatraVersion % "test" cross CrossVersion.for3Use2_13,
-  "org.mockito"                     % "mockito-core"                 % "4.8.0" % "test",
-  "com.dimafeng"                    %% "testcontainers-scala"        % "0.40.10" % "test",
-  "org.testcontainers"              % "mysql"                        % "1.17.3" % "test",
-  "org.testcontainers"              % "postgresql"                   % "1.17.3" % "test",
+  "org.mockito"                     % "mockito-core"                 % "4.11.0" % "test",
+  "com.dimafeng"                    %% "testcontainers-scala"        % "0.40.15" % "test",
+  "org.testcontainers"              % "mysql"                        % "1.18.0" % "test",
+  "org.testcontainers"              % "postgresql"                   % "1.18.0" % "test",
   "net.i2p.crypto"                  % "eddsa"                        % "0.3.0",
   "is.tagomor.woothee"              % "woothee-java"                 % "1.11.0",
   "org.ec4j.core"                   % "ec4j-core"                    % "0.3.0",
-  "org.kohsuke"                     % "github-api"                   % "1.308" % "test"
+  "org.kohsuke"                     % "github-api"                   % "1.314" % "test"
 )
 
 libraryDependencies ~= {
@@ -90,7 +90,6 @@ scalacOptions := Seq(
   "-Wconf:cat=unused&src=twirl/.*:s,cat=unused&src=scala/gitbucket/core/model/[^/]+\\.scala:s"
 )
 compile / javacOptions ++= Seq("-target", "8", "-source", "8")
-Jetty / javaOptions += "-Dlogback.configurationFile=/logback-dev.xml"
 
 // Test settings
 //testOptions in Test += Tests.Argument("-l", "ExternalDBTest")
@@ -286,6 +285,9 @@ Test / testOptions ++= {
 }
 
 Jetty / javaOptions ++= Seq(
+  "-Dlogback.configurationFile=/logback-dev.xml",
   "-Xdebug",
-  "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000"
+  "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000",
+  "-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF",
+  //"-Ddev-features=keep-session"
 )

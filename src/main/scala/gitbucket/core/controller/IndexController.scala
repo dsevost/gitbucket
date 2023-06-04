@@ -1,7 +1,8 @@
 package gitbucket.core.controller
 
-import java.net.URI
+import com.nimbusds.jwt.JWT
 
+import java.net.URI
 import com.nimbusds.oauth2.sdk.id.State
 import com.nimbusds.openid.connect.sdk.Nonce
 import gitbucket.core.helper.xml
@@ -12,6 +13,8 @@ import gitbucket.core.util._
 import gitbucket.core.view.helpers._
 import org.scalatra.Ok
 import org.scalatra.forms._
+
+import gitbucket.core.service.ActivityService._
 
 class IndexController
     extends IndexControllerBase
@@ -57,30 +60,37 @@ trait IndexControllerBase extends ControllerBase {
 //
 //  case class SearchForm(query: String, owner: String, repository: String)
 
-  case class OidcContext(state: State, nonce: Nonce, redirectBackURI: String)
+  case class OidcAuthContext(state: State, nonce: Nonce, redirectBackURI: String)
+  case class OidcSessionContext(token: JWT)
 
   get("/") {
     context.loginAccount
       .map { account =>
         val visibleOwnerSet: Set[String] = Set(account.userName) ++ getGroupsByUserName(account.userName)
-        gitbucket.core.html.index(
-          getRecentActivitiesByOwners(visibleOwnerSet),
-          getVisibleRepositories(
-            Some(account),
-            None,
-            withoutPhysicalInfo = true,
-            limit = context.settings.basicBehavior.limitVisibleRepositories
-          ),
-          showBannerToCreatePersonalAccessToken = hasAccountFederation(account.userName) && !hasAccessToken(
-            account.userName
+        if (!isNewsFeedEnabled()) {
+          redirect("/dashboard/repos")
+        } else {
+          gitbucket.core.html.index(
+            activities = getRecentActivitiesByOwners(visibleOwnerSet),
+            recentRepositories = getVisibleRepositories(
+              Some(account),
+              None,
+              withoutPhysicalInfo = true,
+              limit = context.settings.basicBehavior.limitVisibleRepositories
+            ),
+            showBannerToCreatePersonalAccessToken = hasAccountFederation(account.userName) && !hasAccessToken(
+              account.userName
+            ),
+            enableNewsFeed = isNewsFeedEnabled()
           )
-        )
+        }
       }
       .getOrElse {
         gitbucket.core.html.index(
-          getRecentPublicActivities(),
-          getVisibleRepositories(None, withoutPhysicalInfo = true),
-          showBannerToCreatePersonalAccessToken = false
+          activities = getRecentPublicActivities(),
+          recentRepositories = getVisibleRepositories(None, withoutPhysicalInfo = true),
+          showBannerToCreatePersonalAccessToken = false,
+          enableNewsFeed = isNewsFeedEnabled()
         )
       }
   }
@@ -120,8 +130,8 @@ trait IndexControllerBase extends ControllerBase {
         case _                             => "/"
       }
       session.setAttribute(
-        Keys.Session.OidcContext,
-        OidcContext(authenticationRequest.getState, authenticationRequest.getNonce, redirectBackURI)
+        Keys.Session.OidcAuthContext,
+        OidcAuthContext(authenticationRequest.getState, authenticationRequest.getNonce, redirectBackURI)
       )
       redirect(authenticationRequest.toURI.toString)
     } getOrElse {
@@ -135,10 +145,12 @@ trait IndexControllerBase extends ControllerBase {
   get("/signin/oidc") {
     context.settings.oidc.map { oidc =>
       val redirectURI = new URI(s"$baseUrl/signin/oidc")
-      session.get(Keys.Session.OidcContext) match {
-        case Some(context: OidcContext) =>
-          authenticate(params.toMap, redirectURI, context.state, context.nonce, oidc).map { account =>
-            signin(account, context.redirectBackURI)
+      session.get(Keys.Session.OidcAuthContext) match {
+        case Some(context: OidcAuthContext) =>
+          authenticate(params.toMap, redirectURI, context.state, context.nonce, oidc).map {
+            case (jwt, account) =>
+              session.setAttribute(Keys.Session.OidcSessionContext, OidcSessionContext(jwt))
+              signin(account, context.redirectBackURI)
           } orElse {
             flash.update("error", "Sorry, authentication failed. Please try again.")
             session.invalidate()
@@ -155,7 +167,19 @@ trait IndexControllerBase extends ControllerBase {
   }
 
   get("/signout") {
+    context.settings.oidc.map { oidc =>
+      session.get(Keys.Session.OidcSessionContext).foreach {
+        case context: OidcSessionContext =>
+          val redirectURI = new URI(baseUrl)
+          val authenticationRequest = createOIDLogoutRequest(oidc.issuer, oidc.clientID, redirectURI, context.token)
+          session.invalidate
+          redirect(authenticationRequest.toURI.toString)
+      }
+    }
     session.invalidate
+    if (isDevFeatureEnabled(DevFeatures.KeepSession)) {
+      deleteLoginAccountFromLocalFile()
+    }
     redirect("/")
   }
 
@@ -178,6 +202,9 @@ trait IndexControllerBase extends ControllerBase {
    */
   private def signin(account: Account, redirectUrl: String = "/") = {
     session.setAttribute(Keys.Session.LoginAccount, account)
+    if (isDevFeatureEnabled(DevFeatures.KeepSession)) {
+      saveLoginAccountToLocalFile(account)
+    }
     updateLastLoginDate(account.userName)
 
     if (LDAPUtil.isDummyMailAddress(account)) {
